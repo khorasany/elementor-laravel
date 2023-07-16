@@ -1,24 +1,102 @@
-version: '3.1'
+version: '3'
+
+networks:
+  elementor_laravel:
+
 
 services:
+  nginx:
+    image: nginx:stable-alpine
+    container_name: elementor_laravel-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./src:/var/www/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php
+      - mysql
+    networks:
+      - elementor_laravel
 
   mysql:
-    image: mysql:5.7
-    ports:
-      - 3308:3306
-    environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: wordpress_test
-
-  wordpress_phpunit:
-    image: pojome/phpunit-local
-    environment:
-      PHPUNIT_DB_HOST: mysql
+    image: mysql:5.7.29
+    container_name: elementor_laravel-mysql
+    restart: unless-stopped
+    tty: true
     volumes:
-      - .:/app
-      - testsuite:/tmp
+      - ./mysql:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_DATABASE=elementor_laravel_db
+      - MYSQL_USER=kansai
+      - MYSQL_PASSWORD=adygcy8b
+      - MYSQL_ROOT_PASSWORD=adygcy8b
+      - SERVICE_TAG=dev
+      - SERVICE_NAME=mysql
+    networks:
+      - elementor_laravel
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: elementor_laravel-phpmyadmin
+    restart: always
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: kansai
+      PMA_PASSWORD: adygcy8b
+    volumes:
+      - ./upload.ini:/usr/local/etc/php/php.ini
+    ports:
+      - "8888:80"
+    networks:
+      - elementor_laravel
+
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: elementor_laravel-php
+    volumes:
+      - ./src:/var/www/html
+    ports:
+      - "9000:9000"
+    networks:
+      - elementor_laravel
+
+  composer:
+    image: composer:latest
+    container_name: elementor_laravel-composer
+    volumes:
+      - ./src:/var/www/html
+    working_dir: /var/www/html
+    depends_on:
+      - php
+    networks:
+      - elementor_laravel
+
+  npm:
+    image: node:latest
+    container_name: elementor_laravel-npm
+    volumes:
+      - ./src:/var/www/html
+    working_dir: /var/www/html
+    entrypoint: [ 'npm' ]
+    networks:
+      - elementor_laravel
+
+  artisan:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: elementor_laravel-artisan
+    volumes:
+      - ./src:/var/www/html
     depends_on:
       - mysql
+    working_dir: /var/www/html
+    entrypoint: [ 'php','/var/www/html/artisan' ]
+    networks:
+      - elementor_laravel
 
-volumes:
-  testsuite:
