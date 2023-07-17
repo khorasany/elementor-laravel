@@ -1,1 +1,10 @@
 @import "grapesjs/dist/css/grapes.min.css";
+#gjs {
+    border: 3px solid #444;
+}
+
+body,
+html {
+    height: 100%;
+    margin: 0;
+}

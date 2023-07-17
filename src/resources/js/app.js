@@ -1,4 +1,4 @@
 import './bootstrap';
-import grapesjs from "grapesjs";
+import grapesjs,{usePlugin} from "grapesjs";
 
 
